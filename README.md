@@ -1,4 +1,4 @@
-# AI Resume Analyser
+# AI Resume Generator and Analyser
 
 AI Resume Analyser is a full-stack web application that leverages AI to help users create, analyze, and optimize professional resumes. The platform provides a seamless experience for building resumes using customizable templates, receiving AI-powered feedback, and managing multiple resume projects.
 
