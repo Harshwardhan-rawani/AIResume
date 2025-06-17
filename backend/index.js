@@ -27,6 +27,10 @@ const authRouter = require('./routes/auth');
 const resumeRouter = require('./routes/resume');
 const templateRouter = require('./routes/template');
 const airouter = require('./routes/airouter');
+const { deleteOne } = require('./models/userModel');
+app.get("/",(req,res)=>{
+  res.json({sucess : "sucessfully deleteOne"})
+})
 app.use('/api/ai', airouter);
 app.use('/api', templateRouter);
 app.use('/api/auth', authRouter);
