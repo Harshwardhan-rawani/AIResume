@@ -20,6 +20,7 @@ AI Resume Analyser is a full-stack web application that leverages AI to help use
 - **AI Integration:** OpenAI GPT-3.5 Turbo (for resume analysis and enhancement)
 - **Cloud Storage:** Cloudinary (for template thumbnails)
 - **Authentication:** JWT (JSON Web Tokens), HTTP-only cookies
+- **LangChain:** Integrated in the backend for advanced AI workflow orchestration and prompt management
 
 ## Folder Structure
 
@@ -111,6 +112,7 @@ d:\react js\AiResumeAnalyser\
 - **/routes**: Express route definitions for API endpoints.
 - **/pages (frontend)**: React pages for dashboard, builder, preview, templates, and analysis.
 - **/components (frontend)**: UI components and utilities.
+- **LangChain Integration (backend):** Used for orchestrating complex AI workflows and managing prompt chains in resume analysis and enhancement features.
 
 ## Contributing
 
