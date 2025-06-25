@@ -1,12 +1,30 @@
 const Template = require('../models/templateModel');
 const cloudinary = require('cloudinary').v2;
-
+const jwt = require('jsonwebtoken');
 // Cloudinary config (set your credentials in env)
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+
+exports.authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['Authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Get token after "Bearer"
+  console.log("Token:", token); // Log the token for debugging
+  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log(decoded) // Use your secret key
+    req.user = decoded; // Add user data to request if needed
+    next();
+  } catch (err) {
+    res.status(403).json({ error: 'Invalid or expired token.' });
+  }
+};
+
 
 exports.createTemplate = async (req, res) => {
   try {

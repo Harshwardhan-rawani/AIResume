@@ -2,7 +2,8 @@ const Resume = require('../models/resumeModel');
 const jwt = require('jsonwebtoken');
 
 function getEmailFromToken(req) {
-  const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+  // Only use Authorization header (JWT from localStorage on frontend)
+  const token = req.headers.authorization?.split(' ')[1];
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -51,7 +52,7 @@ exports.submitResume = async (req, res) => {
 exports.createResume = async (req, res) => {
   try {
     const { resumeName , category,selectedTemplateId } = req.body;
-
+    console.error('Create resume request body:', req.body);
     const email = getEmailFromToken(req);
 
     if (!email) return res.status(401).json({ error: 'Unauthorized: Invalid or missing token.' });

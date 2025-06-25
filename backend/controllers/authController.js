@@ -36,17 +36,14 @@ exports.signup = async (req, res) => {
       return res.status(500).json({ error: 'Server configuration error.' });
     }
 
-    // Create JWT and set cookie
+    // Create JWT and return in response
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-    sameSite: 'None',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    res.status(201).json({ 
+      message: 'User registered successfully.',
+      token,
+      fullName: user.fullName
     });
-
-    res.status(201).json({ message: 'User registered successfully.' });
   } catch (err) {
     console.error('Signup error:', err); // Log the actual error
     res.status(500).json({ error: 'Database error.' });
@@ -72,16 +69,13 @@ exports.login = async (req, res) => {
       console.error('JWT_SECRET is not set in environment variables.');
       return res.status(500).json({ error: 'Server configuration error.' });
     }
-    // Create JWT and set cookie
+    // Create JWT and return in response
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-       sameSite: 'None',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    res.json({ 
+      message: 'Login successful',
+      token,
+      fullName: user.fullName
     });
-  
-    res.json({ message: 'Login successful' });
   } catch (err) {
     console.error('Login error:', err); // Log the actual error
     res.status(500).json({ error: 'Database error.' });
@@ -91,7 +85,8 @@ exports.login = async (req, res) => {
 // Update user name
 exports.updateName = async (req, res) => {
   try {
-    const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+    // Get token from Authorization header (JWT from localStorage on frontend)
+    const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Unauthorized: No token provided.' });
     let decoded;
     try {
@@ -116,7 +111,8 @@ exports.updateName = async (req, res) => {
 // Change user password
 exports.changePassword = async (req, res) => {
   try {
-    const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+    // Get token from Authorization header (JWT from localStorage on frontend)
+    const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Unauthorized: No token provided.' });
     let decoded;
     try {
@@ -142,3 +138,5 @@ exports.changePassword = async (req, res) => {
     res.status(500).json({ error: 'Failed to change password.' });
   }
 };
+
+
