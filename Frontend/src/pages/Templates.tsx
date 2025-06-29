@@ -21,6 +21,47 @@ const categoryLabels = [
   { key: 'Academic', label: 'Academic' }
 ];
 
+// Skeleton loading component for template cards
+const TemplateCardSkeleton = () => (
+  <Card className="group cursor-pointer transition-all duration-300 border-2 border-gray-200">
+    <CardContent className="p-6">
+      {/* Template Preview Skeleton */}
+      <div className="aspect-[3/4] bg-gray-200 rounded-lg mb-4 animate-pulse"></div>
+
+      {/* Template Info Skeleton */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+        </div>
+
+        <div className="flex gap-2 mt-4">
+          <div className="h-10 bg-gray-200 rounded flex-1 animate-pulse"></div>
+          <div className="h-10 bg-gray-200 rounded flex-1 animate-pulse"></div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Loading grid component
+const LoadingGrid = () => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    {Array.from({ length: 6 }).map((_, index) => (
+      <TemplateCardSkeleton key={index} />
+    ))}
+  </div>
+);
+
 const Templates = () => {
   const {
     templates,
@@ -60,6 +101,7 @@ const Templates = () => {
                 size="sm"
                 onClick={() => setActiveCategory(cat.key)}
                 className={activeCategory === cat.key ? "bg-black hover:bg-gray-800" : ""}
+                disabled={loading}
               >
                 {cat.label}
               </Button>
@@ -68,11 +110,45 @@ const Templates = () => {
 
           {/* Templates Grid */}
           {loading ? (
-            <div className="text-center text-gray-500 py-12">Loading templates...</div>
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 text-gray-600">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
+                  <span>Loading templates...</span>
+                </div>
+              </div>
+              <LoadingGrid />
+            </div>
           ) : error ? (
-            <div className="text-center text-red-500 py-12">{error}</div>
+            <div className="text-center py-12">
+              <div className="max-w-md mx-auto">
+                <div className="text-red-500 text-lg font-medium mb-2">Failed to load templates</div>
+                <div className="text-gray-600 mb-4">{error}</div>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  variant="outline"
+                >
+                  Try Again
+                </Button>
+              </div>
+            </div>
           ) : filteredTemplates.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">No templates found for this category.</div>
+            <div className="text-center py-12">
+              <div className="max-w-md mx-auto">
+                <div className="text-gray-400 text-lg font-medium mb-2">No templates found</div>
+                <div className="text-gray-500 mb-4">
+                  No templates available for the "{activeCategory}" category.
+                </div>
+                {activeCategory !== 'All' && (
+                  <Button 
+                    onClick={() => setActiveCategory('All')} 
+                    variant="outline"
+                  >
+                    View All Templates
+                  </Button>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredTemplates.map((template) => (
@@ -87,7 +163,12 @@ const Templates = () => {
                     {/* Template Preview */}
                     <div className="aspect-[3/4] bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                       {template?.thumbnailUrl ? (
-                        <img src={template.thumbnailUrl} alt={template?.name || "Template"} className="object-cover w-full h-full" />
+                        <img 
+                          src={template.thumbnailUrl} 
+                          alt={template?.name || "Template"} 
+                          className="object-cover w-full h-full"
+                          loading="lazy"
+                        />
                       ) : (
                         <div className="text-gray-400 text-center">
                           <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-2"></div>
