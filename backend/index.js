@@ -7,7 +7,8 @@ const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL
+  origin: process.env.FRONTEND_URL,
+  credentials: true, // Allow cookies/authorization headers
 }));
 app.use(express.json());
 
