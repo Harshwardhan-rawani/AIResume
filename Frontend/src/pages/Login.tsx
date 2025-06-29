@@ -47,12 +47,13 @@ const handleSubmit = async (e: React.FormEvent) => {
       {
         email: formData.email.trim(),
         password: formData.password,
-      },
-      {
-        withCredentials: true,
       }
     );
   
+    // Store token and user data in localStorage
+    localStorage.setItem('authToken', response.data.token);
+    localStorage.setItem('userName', response.data.fullName);
+    
     setToastType('success');
     setToastMsg('Login successful! Redirecting...');
     setToastOpen(true);

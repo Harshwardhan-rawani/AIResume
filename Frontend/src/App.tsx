@@ -13,6 +13,7 @@ import Templates from "./pages/Templates";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import About from "./pages/About";
 import Privacy from "./pages/Privacy";
@@ -21,11 +22,21 @@ import NotFound from "./pages/NotFound";
 
 import Create from "./pages/Create";
 
-// Improved function to check for token in cookies
+// Improved function to check for token in localStorage
 function hasAuthToken() {
-  // Only return true if the token cookie exists and is not empty
-  const match = document.cookie;
-  return !!(match && match[1]);
+  const token = localStorage.getItem('authToken');
+  if (!token) return false;
+  
+  try {
+    // Basic JWT validation - check if token is not expired
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp > currentTime;
+  } catch (error) {
+    // If token is malformed, remove it and return false
+    localStorage.removeItem('authToken');
+    return false;
+  }
 }
 
 // PrivateRoute component
@@ -67,6 +78,11 @@ const App = () => (
               <Route path="/dashboard" element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              } />
+              <Route path="/profile" element={
+                <PrivateRoute>
+                  <Profile />
                 </PrivateRoute>
               } />
               <Route path="/admin" element={

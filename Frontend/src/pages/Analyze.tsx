@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Upload, Zap, Target, CheckCircle, AlertCircle, FileText } from 'lucide-react';
-import axios from 'axios';
+import api from '@/lib/axios';
 
 const Analyze = () => {
   const [resumeText, setResumeText] = useState('');
@@ -39,15 +39,13 @@ const Analyze = () => {
         const formData = new FormData();
         formData.append('file', pdfFile);
         formData.append('jobRole', selectedRole);
-        res = await axios.post(apiUrl, formData, {
-          withCredentials: true,
+        res = await api.post(apiUrl, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       } else {
-        res = await axios.post(
+        res = await api.post(
           apiUrl,
           { resumeText, jobRole: selectedRole },
-          { withCredentials: true }
         );
       }
       setAnalysis(res.data.analysis);

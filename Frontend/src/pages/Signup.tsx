@@ -98,9 +98,11 @@ const handleSubmit = async (e: React.FormEvent) => {
       fullName: formData.fullName,
       email: formData.email.trim(),
       password: formData.password
-    }, {
-      withCredentials: true
     });
+
+    // Store token and user data in localStorage
+    localStorage.setItem('authToken', response.data.token);
+    localStorage.setItem('userName', response.data.fullName);
 
     setSuccess('Account created successfully! Redirecting to dashboard...');
     setToastType('success');

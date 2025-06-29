@@ -1,15 +1,18 @@
-import { useContext, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Search, Star, Eye, Download, Plus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { CheckCircle, X } from 'lucide-react';
-import { TemplateContext } from '@/context/TemplateContext';
+import { useTemplate } from '@/hooks/useTemplate';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/axios';
 
 const categoryLabels = [
-  { key: 'All', label: 'All' },
+  { key: 'All', label: 'All Templates' },
   { key: 'Professional', label: 'Professional' },
   { key: 'Creative', label: 'Creative' },
   { key: 'Executive', label: 'Executive' },
@@ -19,36 +22,18 @@ const categoryLabels = [
 ];
 
 const Templates = () => {
-  const { selectedTemplate, setSelectedTemplate } = useContext(TemplateContext);
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('All');
+  const {
+    templates,
+    loading,
+    error,
+    selectedTemplate,
+    setSelectedTemplate,
+    activeCategory,
+    setActiveCategory,
+    filteredTemplates
+  } = useTemplate();
+
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
-
-  // Fetch templates from backend
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      setLoading(true);
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL + '/api/templates';
-        const res = await axios.get(apiUrl, { withCredentials: true });
-        setTemplates(Array.isArray(res.data.templates) ? res.data.templates : []);
-      } catch {
-        setTemplates([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTemplates();
-  }, []);
-
-  // Filter templates by selected category
-  const filteredTemplates =
-    activeCategory === 'All'
-      ? templates
-      : templates.filter((template) =>
-          ((template?.category || '') + '').toLowerCase() === activeCategory.toLowerCase()
-        );
 
   return (
     <div className="min-h-screen bg-white">
@@ -84,6 +69,8 @@ const Templates = () => {
           {/* Templates Grid */}
           {loading ? (
             <div className="text-center text-gray-500 py-12">Loading templates...</div>
+          ) : error ? (
+            <div className="text-center text-red-500 py-12">{error}</div>
           ) : filteredTemplates.length === 0 ? (
             <div className="text-center text-gray-400 py-12">No templates found for this category.</div>
           ) : (
@@ -92,9 +79,9 @@ const Templates = () => {
                 <Card
                   key={template?._id || template?.id || Math.random()}
                   className={`group cursor-pointer transition-all duration-300 hover:shadow-xl border-2 ${
-                    selectedTemplate === template?._id ? 'border-black shadow-xl' : 'border-gray-200 hover:border-gray-300'
+                    selectedTemplate?._id === template?._id ? 'border-black shadow-xl' : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  onClick={() => setSelectedTemplate(template?._id)}
+                  onClick={() => setSelectedTemplate(template)}
                 >
                   <CardContent className="p-6">
                     {/* Template Preview */}
@@ -115,7 +102,7 @@ const Templates = () => {
                         <h3 className="font-semibold text-lg text-gray-900">
                           {template?.name || "Untitled"}
                         </h3>
-                        {selectedTemplate === template?._id && (
+                        {selectedTemplate?._id === template?._id && (
                           <CheckCircle className="h-5 w-5 text-green-500" />
                         )}
                       </div>
@@ -153,24 +140,18 @@ const Templates = () => {
                           to={'/create'}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedTemplate(template?._id);
-                            // Save templateIndex or _id to localStorage for later use
-                            if (template?.templateIndex !== undefined) {
-                              localStorage.setItem('selectedTemplateIndex', template.templateIndex);
-                            } else if (template?._id) {
-                              localStorage.setItem('selectedTemplateIndex', template._id);
-                            }
+                            setSelectedTemplate(template);
                           }}
                           className="w-full"
                         >
                           <Button
                             className={`w-full ${
-                              selectedTemplate === template?._id
+                              selectedTemplate?._id === template?._id
                                 ? 'bg-black hover:bg-gray-800'
                                 : 'bg-gray-900 hover:bg-black'
                             }`}
                           >
-                            {selectedTemplate === template?._id ? 'Selected' : 'Select Template'}
+                            {selectedTemplate?._id === template?._id ? 'Selected' : 'Select Template'}
                           </Button>
                         </Link>
                       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState as useReactState, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, ChevronDown, LogOut, Settings, UserCircle } from 'lucide-react';
+import { logout } from '@/lib/utils';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,8 +20,20 @@ const Navbar = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Check for token cookie
-  const isLoggedIn = document.cookie;
+  // Check for token in localStorage
+  const isLoggedIn = () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) return false;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp > currentTime;
+    } catch (error) {
+      localStorage.removeItem('authToken');
+      return false;
+    }
+  };
 
   // User dropdown state
   const [userMenuOpen, setUserMenuOpen] = useReactState(false);
@@ -28,11 +41,9 @@ const Navbar = () => {
 
   // Example: get user name from localStorage or cookie (customize as needed)
   useEffect(() => {
-    // You can replace this with actual user fetching logic
-    // For demo, try to get from localStorage or fallback
+    // Get user name from localStorage
     const storedName = localStorage.getItem('userName');
     if (storedName) setUserName(storedName);
-    // Or decode from JWT if you store it in cookies
   }, []);
 
   return (
@@ -66,7 +77,7 @@ const Navbar = () => {
 
           {/* Desktop Auth/User Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {!isLoggedIn ? (
+            {!isLoggedIn() ? (
               <>
                 <Link to="/login">
                   <Button variant="outline" size="sm">
@@ -109,17 +120,23 @@ const Navbar = () => {
                       <UserCircle className="h-4 w-4" />
                       Dashboard
                     </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('/profile');
+                      }}
+                    >
+                      <User className="h-4 w-4" />
+                      Profile
+                    </button>
                    
                     <button
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                       onClick={() => {
                         setUserMenuOpen(false);
-                        // Remove token cookie
-                        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
-                        // Optionally clear userName from localStorage
-                        localStorage.removeItem('userName');
+                        logout();
                         navigate('/login');
-                        window.location.reload();
                       }}
                     >
                       <LogOut className="h-4 w-4" />
@@ -162,7 +179,7 @@ const Navbar = () => {
                 </Link>
               ))}
               <div className="flex flex-col space-y-2 px-3 pt-4">
-                {!isLoggedIn ? (
+                {!isLoggedIn() ? (
                   <>
                     <Link to="/login" onClick={() => setIsOpen(false)}>
                       <Button variant="outline" size="sm" className="w-full">
@@ -176,18 +193,30 @@ const Navbar = () => {
                     </Link>
                   </>
                 ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full bg-gray-200 hover:bg-gray-300 w-10 h-10 mx-auto"
-                    onClick={() => {
-                      setIsOpen(false);
-                      navigate('/dashboard');
-                    }}
-                    title="Go to Dashboard"
-                  >
-                    <User className="h-6 w-6 text-black" />
-                  </Button>
+                  <>
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Link to="/profile" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Profile
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full bg-gray-200 hover:bg-gray-300 w-10 h-10 mx-auto"
+                      onClick={() => {
+                        setIsOpen(false);
+                        navigate('/dashboard');
+                      }}
+                      title="Go to Dashboard"
+                    >
+                      <User className="h-6 w-6 text-black" />
+                    </Button>
+                  </>
                 )}
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -304,10 +304,9 @@ const BuildResume = () => {
   const handleAiEnhance = async (section: keyof FormData, field: string, value: string, index?: number) => {
     setAiEnhanceModal(true);
     try {
-      const res = await axios.post(
-        import.meta.env.VITE_API_URL + '/api/ai/enhance',
+      const res = await api.post(
+        '/ai/enhance',
         { text: value },
-        { withCredentials: true }
       );
       const enhanced = res.data?.enhanced || value;
       if (typeof index === "number") {
@@ -987,11 +986,10 @@ const BuildResume = () => {
 
   const handleSubmit = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL + '/api/resume/submit';
-      await axios.post(
+      const apiUrl = '/api/resume/submit';
+      await api.post(
         apiUrl,
         { formData, resumename: params.name },
-        { withCredentials: true }
       );
       toast({
         title: "Resume Submitted",
@@ -1014,8 +1012,8 @@ const BuildResume = () => {
     const fetchResume = async () => {
       if (!params.name) return;
       try {
-        const apiUrl = import.meta.env.VITE_API_URL + `/api/resume/get/${params.name}`;
-        const res = await axios.get(apiUrl, { withCredentials: true });
+        const apiUrl = `/api/resume/get/${params.name}`;
+        const res = await api.get(apiUrl);
       
         if (res.data && res.data.final) {
     
@@ -1162,7 +1160,7 @@ const BuildResume = () => {
           <p className="text-center text-sm text-gray-500">
             Hang tight while our AI refines your content.
             <br />
-            This won’t take long 🚀
+            This won't take long 🚀
           </p>
         </CardContent>
       </Card>

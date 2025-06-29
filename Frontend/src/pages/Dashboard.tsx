@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
+import UserProfile from '@/components/UserProfile';
 import { 
   FileText, 
   BarChart3, 
@@ -13,19 +14,37 @@ import {
   Calendar,
   Eye,
   Menu,
-  X
+  X,
+  User
 } from 'lucide-react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
+import api from '@/lib/axios';
+import { logout } from '@/lib/utils';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('resumes');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get tab from URL parameters
+  const urlParams = new URLSearchParams(location.search);
+  const initialTab = urlParams.get('tab') || 'resumes';
+  
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [resumeList, setResumeList] = useState<any[]>([]);
   const [loadingResumes, setLoadingResumes] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [analysisModal, setAnalysisModal] = useState<{ open: boolean, details?: any }>({ open: false });
+
+  // Function to handle tab changes and update URL
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    setSidebarOpen(false);
+    // Update URL without page reload
+    const newUrl = `/dashboard?tab=${tabId}`;
+    navigate(newUrl, { replace: true });
+  };
 
   // Show all fields in a table in the modal
   const handleViewAnalysisDetails = (analysis: any) => {
@@ -42,7 +61,7 @@ const Dashboard = () => {
       try {
 
         const apiUrl = import.meta.env.VITE_API_URL + `/api/resume/list`;
-        const res = await axios.get(apiUrl, { withCredentials: true });
+        const res = await api.get(apiUrl);
         setResumeList(res.data.resumes || []);
 
       } catch (err) {
@@ -61,7 +80,7 @@ const Dashboard = () => {
       const fetchAnalysisHistory = async () => {
         try {
           const apiUrl = import.meta.env.VITE_API_URL + `/api/ai/analysis/history`;
-          const res = await axios.get(apiUrl, { withCredentials: true });
+          const res = await api.get(apiUrl);
           setAnalysisHistory(res.data.history || []);
         } catch {
           setAnalysisHistory([]);
@@ -76,17 +95,17 @@ const Dashboard = () => {
   const sidebarItems = [
     { id: 'resumes', label: 'Saved Resumes', icon: FileText },
     { id: 'analysis', label: 'Analysis History', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'userProfile', label: 'User Profile', icon: User }
   ];
 
   // Delete resume handler
-  const toast = useToast();
-  const navigate = useNavigate();
+  const { toast } = useToast();
   const handleDeleteResume = async (resumeName: string) => {
   
     try {
       const apiUrl = import.meta.env.VITE_API_URL + `/api/resume/delete/${encodeURIComponent(resumeName)}`;
-      await axios.delete(apiUrl, { withCredentials: true });
+      await api.delete(apiUrl);
       setResumeList((prev) => prev.filter((r) => r.Name !== resumeName));
       toast({
         title: "Resume deleted",
@@ -106,13 +125,12 @@ const Dashboard = () => {
   const handleDeleteAnalysis = async (analysis: any) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL + `/api/ai/analysis/history`;
-      await axios.delete(apiUrl, {
+      await api.delete(apiUrl, {
         data: {
           resumeName: analysis.resumeName,
           jobRole: analysis.jobRole,
           date: analysis.date,
         },
-        withCredentials: true,
       });
       setAnalysisHistory((prev) =>
         prev.filter(
@@ -135,7 +153,7 @@ const Dashboard = () => {
     const fetchAnalysisHistory = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL + `api/ai/analysis/history`;
-        const res = await axios.get(apiUrl, { withCredentials: true });
+        const res = await api.get(apiUrl);
   
         // Assuming you want to store the history in analysisModal for now
         setAnalysisModal((prev) => ({ ...prev, history: res.data }));
@@ -423,7 +441,7 @@ const Dashboard = () => {
 
                   {key.toLowerCase().includes("date") && value ? (
                     <p className="text-gray-700 text-sm">
-                      {new Date(value).toLocaleString()}
+                      {new Date(value as string | number | Date).toLocaleString()}
                     </p>
                   ) : Array.isArray(value) ? (
                     <ul className="list-disc list-inside text-gray-700 text-sm">
@@ -481,23 +499,20 @@ const handleSave = async () => {
   try {
     // Update name
     if (name) {
-      await axios.post(
+      await api.post(
         import.meta.env.VITE_API_URL + '/api/auth/user/update-name',
         { name },
-        { withCredentials: true }
-        
       );
       
     }
     // Change password if fields are filled
     if (currentPassword && newPassword && newPassword === confirmPassword) {
-      await axios.post(
+      await api.post(
         import.meta.env.VITE_API_URL + '/api/auth/user/change-password',
         {
           currentPassword,
           newPassword,
         },
-        { withCredentials: true }
       );
     }
     toast({
@@ -573,10 +588,8 @@ const renderSettings = () => {
               variant="outline"
               className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50"
               onClick={() => {
-                document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
-                localStorage.removeItem('userName');
+                logout();
                 navigate('/login');
-                window.location.reload();
               }}
             >
               Logout
@@ -628,8 +641,7 @@ const renderSettings = () => {
             <button
               key={item.id}
               onClick={() => {
-            setActiveTab(item.id);
-            setSidebarOpen(false);
+            handleTabChange(item.id);
               }}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors text-sm md:text-base ${
             activeTab === item.id
@@ -651,6 +663,7 @@ const renderSettings = () => {
         {activeTab === 'resumes' && renderResumes()}
         {activeTab === 'analysis' && renderAnalysisHistory()}
         {activeTab === 'settings' && renderSettings()}
+        {activeTab === 'userProfile' && <UserProfile />}
           </div>
         </div>
       </div>

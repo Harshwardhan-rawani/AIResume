@@ -1,13 +1,13 @@
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "@/lib/axios";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FileText, User, Briefcase, Award, ArrowLeft } from "lucide-react";
-import { TemplateContext } from '@/context/TemplateContext';
+import { FileText, User, Briefcase, Award, ArrowLeft, AlertCircle } from "lucide-react";
+import { useTemplate } from '@/hooks/useTemplate';
 import * as Select from "@radix-ui/react-select";
 
 const iconList = [
@@ -27,8 +27,7 @@ const categories = [
 ];
 
 const Create = () => {
-  
-
+  const { selectedTemplate } = useTemplate();
   const [resumeName, setResumeName] = useState("");
   const [error, setError] = useState("");
   const [category, setCategory] = useState<string>("Professional");
@@ -40,18 +39,21 @@ const Create = () => {
       setError("Resume name is required.");
       return;
     }
-    const selectedTemplateId = localStorage.getItem("selectedTemplateIndex");
 
-    if (!selectedTemplateId) {
-      navigate(`/templates`);
+    if (!selectedTemplate) {
+      setError("Please select a template first.");
       return;
     }
+
     try {
       const apiUrl = import.meta.env.VITE_API_URL + "/api/resume/create";
-     const res= await axios.post(
+      const res = await api.post(
         apiUrl,
-        { resumeName, category , selectedTemplateId }, // category is supported in backend createResume
-        { withCredentials: true }
+        { 
+          resumeName, 
+          category, 
+          selectedTemplateId: selectedTemplate.templateIndex.toString()
+        }
       );
 
       // Optionally, redirect to build page after creation
@@ -64,11 +66,9 @@ const Create = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-
       <Navbar />
       
       <div className="flex flex-1 items-center justify-center">
-        
         <div className="w-full max-w-5xl flex flex-col md:flex-row bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
           {/* Left Side Animation */}
           <div className="hidden md:flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 w-1/2 p-10 relative">
@@ -109,8 +109,6 @@ const Create = () => {
           {/* Right Side Form */}
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="w-full max-w-md">
-              {/* Back Button */}
-            
               <Card className="animate-scale-in shadow-none border-none">
                 <CardHeader>
                   <CardTitle className="text-center text-2xl font-bold">
@@ -120,15 +118,30 @@ const Create = () => {
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     {error && (
-                      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
                         {error}
                       </div>
                     )}
+
+                    {/* Template Selection Status */}
+                    {selectedTemplate ? (
+                      <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                        <div className="font-medium">Selected Template:</div>
+                        <div>{selectedTemplate.name}</div>
+                        <div className="text-xs text-green-600 mt-1">
+                          Category: {selectedTemplate.category}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Please select a template first
+                      </div>
+                    )}
+
                     <div className="space-y-2">
-                      <Label
-                        htmlFor="resumeName"
-                        className="font-medium"
-                      >
+                      <Label htmlFor="resumeName" className="font-medium">
                         Project Name
                       </Label>
                       <Input
@@ -149,34 +162,35 @@ const Create = () => {
                       <Label htmlFor="category" className="font-medium">
                         Category
                       </Label>
-                    <Select.Root value={category} onValueChange={setCategory}>
+                      <Select.Root value={category} onValueChange={setCategory}>
                         <Select.Trigger
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left flex justify-between items-center"
-                            id="category"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left flex justify-between items-center"
+                          id="category"
                         >
-                            <Select.Value />
-                            <Select.Icon className="ml-2" />
+                          <Select.Value />
+                          <Select.Icon className="ml-2" />
                         </Select.Trigger>
                         <Select.Portal>
-                            <Select.Content className="bg-white border rounded shadow-lg z-50">
-                                <Select.Viewport>
-                                    {categories.map((cat) => (
-                                        <Select.Item
-                                            key={cat}
-                                            value={cat}
-                                            className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                                        >
-                                            <Select.ItemText>{cat}</Select.ItemText>
-                                        </Select.Item>
-                                    ))}
-                                </Select.Viewport>
-                            </Select.Content>
+                          <Select.Content className="bg-white border rounded shadow-lg z-50">
+                            <Select.Viewport>
+                              {categories.map((cat) => (
+                                <Select.Item
+                                  key={cat}
+                                  value={cat}
+                                  className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                                >
+                                  <Select.ItemText>{cat}</Select.ItemText>
+                                </Select.Item>
+                              ))}
+                            </Select.Viewport>
+                          </Select.Content>
                         </Select.Portal>
-                    </Select.Root>
+                      </Select.Root>
                     </div>
                     <Button
                       type="submit"
                       className="w-full bg-black hover:bg-gray-800"
+                      disabled={!selectedTemplate}
                     >
                       Start Building
                     </Button>

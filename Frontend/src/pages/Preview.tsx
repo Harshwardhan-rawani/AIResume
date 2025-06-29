@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+
+import { Download, ArrowLeft, Eye, Edit, Share2, Star, Clock, TrendingUp } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import ResumeRenderer from './ResumeRenderer'
-import { Download, Edit } from 'lucide-react';
 import Footer from '@/components/Footer';
+import api from '@/lib/axios';
+import ResumeRenderer from './ResumeRenderer'
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+
 
 const Preview = () => {
   const params = useParams();
@@ -16,8 +18,6 @@ const Preview = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [allTemplates, setAllTemplates] = useState<any[]>([]);
-
-
 
   const navigate = useNavigate();
   const pdfRef = useRef<HTMLDivElement>(null);
@@ -31,7 +31,7 @@ const Preview = () => {
       }
       try {
         const apiUrl = import.meta.env.VITE_API_URL + `/api/resume/get/${params.name}`;
-        const res = await axios.get(apiUrl, { withCredentials: true });
+        const res = await api.get(apiUrl);
         // Defensive: check if data and final exist
         setResumeData(res.data && res.data.final ? res.data.final : null);
 
@@ -40,7 +40,7 @@ const Preview = () => {
         if (tplId) {
           try {
             const tplApi = import.meta.env.VITE_API_URL + `/api/templates/${tplId}`;
-            const tplRes = await axios.get(tplApi, { withCredentials: true });
+            const tplRes = await api.get(tplApi);
             setTemplateData(tplRes.data && tplRes.data.template ? tplRes.data.template : null);
           } catch {
             setTemplateData(null);
@@ -64,7 +64,7 @@ const Preview = () => {
     const fetchTemplates = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL + `/api/templates`;
-        const res = await axios.get(apiUrl, { withCredentials: true });
+        const res = await api.get(apiUrl);
         setAllTemplates(Array.isArray(res.data.templates) ? res.data.templates : []);
       } catch {
         setAllTemplates([]);
@@ -96,19 +96,22 @@ const Preview = () => {
   const handleChangeTemplate = async (templateId: string) => {
     if (!params.name) return;
     try {
-      await axios.patch(
+      await api.patch(
         import.meta.env.VITE_API_URL + `/api/resume/change-template/${params.name}`,
-        { selectedTemplateId: templateId },
-        { withCredentials: true }
+        { selectedTemplateId: templateId }
       );
       setShowTemplateModal(false);
-      window.location.reload();
+      
+      // Fetch the updated template data
+      try {
+        const tplApi = import.meta.env.VITE_API_URL + `/api/templates/${templateId}`;
+        const tplRes = await api.get(tplApi);
+        setTemplateData(tplRes.data && tplRes.data.template ? tplRes.data.template : null);
+      } catch {
+        setTemplateData(null);
+      }
     } catch {}
   };
-
-
-
-
 
   if (loading) {
     return (
@@ -203,6 +206,5 @@ const Preview = () => {
     </div>
   );
 };
-
 
 export default Preview;

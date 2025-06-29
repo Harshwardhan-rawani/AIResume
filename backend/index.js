@@ -28,7 +28,7 @@ const { deleteOne } = require('./models/userModel');
 app.get("/",(req,res)=>{
   res.json({sucess : "sucessfully deleteOne"})
 })
-app.use('/api/ai', airouter);
+app.use('/ai', airouter);
 app.use('/api', templateRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/resume', resumeRouter);

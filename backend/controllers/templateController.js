@@ -9,21 +9,7 @@ cloudinary.config({
 });
 
 
-exports.authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['Authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Get token after "Bearer"
-  console.log("Token:", token); // Log the token for debugging
-  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded) // Use your secret key
-    req.user = decoded; // Add user data to request if needed
-    next();
-  } catch (err) {
-    res.status(403).json({ error: 'Invalid or expired token.' });
-  }
-};
 
 
 exports.createTemplate = async (req, res) => {
