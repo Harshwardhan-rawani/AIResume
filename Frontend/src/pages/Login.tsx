@@ -64,9 +64,9 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     });
 
-    setTimeout(() => {
+  
       navigate('/dashboard');
-    }, 1200);
+   
   } catch (err) {
     let msg = 'An error occurred. Please try again.';
     if (err.response && err.response.data && err.response.data.error) {
