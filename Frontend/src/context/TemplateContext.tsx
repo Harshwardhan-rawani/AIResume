@@ -1,6 +1,5 @@
 import { createContext, useState, ReactNode, useEffect, useCallback } from "react";
-import api from "@/lib/axios";
-import { getAuthToken, isTokenValid } from "@/lib/utils";
+import { publicApi } from "@/lib/axios";
 
 interface Template {
   _id?: string;
@@ -79,19 +78,11 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
 
   // Fetch templates from backend with retry mechanism
   const fetchTemplates = useCallback(async (retryCount = 0) => {
-    // Check if user is authenticated
-    if (!isTokenValid()) {
-      setError('Authentication required');
-      setTemplates([]);
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.get('/api/templates');
+      const response = await publicApi.get('/api/templates');
       const fetchedTemplates = Array.isArray(response.data.templates) 
         ? response.data.templates 
         : [];
@@ -99,16 +90,6 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
       setHasInitialized(true);
     } catch (err: any) {
       console.error('Error fetching templates:', err);
-      
-      // If it's an authentication error and we haven't retried yet, try again
-      if (err.response?.status === 401 && retryCount < 2) {
-        console.log('Authentication error, retrying...');
-        // Wait a bit before retrying
-        setTimeout(() => {
-          fetchTemplates(retryCount + 1);
-        }, 1000);
-        return;
-      }
       
       // If it's a network error and we haven't retried yet, try again
       if (!err.response && retryCount < 2) {
@@ -142,7 +123,7 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
         // formData.append('image', file);
       }
 
-      await api.post('/api/templates', formData, {
+      await publicApi.post('/api/templates', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
@@ -204,28 +185,11 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [selectedTemplate]);
 
-  // Fetch templates on mount only if user is authenticated
+  // Fetch templates on mount
   useEffect(() => {
-    if (isTokenValid() && !hasInitialized) {
+    if (!hasInitialized) {
       fetchTemplates();
     }
-  }, [fetchTemplates, hasInitialized]);
-
-  // Listen for authentication changes and fetch templates when user logs in
-  useEffect(() => {
-    const checkAuthAndFetch = () => {
-      if (isTokenValid() && !hasInitialized) {
-        fetchTemplates();
-      }
-    };
-
-    // Check immediately
-    checkAuthAndFetch();
-
-    // Set up an interval to check for authentication changes
-    const interval = setInterval(checkAuthAndFetch, 2000);
-
-    return () => clearInterval(interval);
   }, [fetchTemplates, hasInitialized]);
 
   // Listen for logout events
@@ -240,21 +204,6 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener('userLogout', handleUserLogout);
     };
   }, []);
-
-  // Listen for successful login events
-  useEffect(() => {
-    const handleUserLogin = () => {
-      if (isTokenValid() && !hasInitialized) {
-        fetchTemplates();
-      }
-    };
-
-    window.addEventListener('userLogin', handleUserLogin);
-    
-    return () => {
-      window.removeEventListener('userLogin', handleUserLogin);
-    };
-  }, [fetchTemplates, hasInitialized]);
 
   const value: TemplateContextType = {
     selectedTemplate,

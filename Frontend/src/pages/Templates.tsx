@@ -9,7 +9,6 @@ import Footer from '@/components/Footer';
 import { CheckCircle, X } from 'lucide-react';
 import { useTemplate } from '@/hooks/useTemplate';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '@/lib/axios';
 import { isTokenValid } from '@/lib/utils';
 
 const categoryLabels = [
@@ -79,17 +78,35 @@ const Templates = () => {
 
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
 
-  // Check authentication on mount
+  // Fetch templates when component mounts (no authentication required)
   useEffect(() => {
-    if (!isTokenValid()) {
-      navigate('/login');
-      return;
+    // If templates are not loaded, fetch them
+    if (templates.length === 0 && !loading) {
+      fetchTemplates();
     }
-  }, [navigate]);
+  }, [templates.length, loading, fetchTemplates]);
 
   // Handle manual refresh
   const handleRefresh = () => {
     fetchTemplates();
+  };
+
+  // Handle template selection - check authentication before proceeding
+  const handleTemplateSelect = (template: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Check if user is authenticated
+    if (!isTokenValid()) {
+      // Store the selected template in localStorage for after login
+      localStorage.setItem('pendingTemplate', JSON.stringify(template));
+      // Redirect to login
+      navigate('/login');
+      return;
+    }
+    
+    // If authenticated, proceed normally
+    setSelectedTemplate(template);
+    navigate('/create');
   };
 
   return (
@@ -251,24 +268,16 @@ const Templates = () => {
                         >
                           Preview
                         </Button>
-                        <Link
-                          to={'/create'}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTemplate(template);
-                          }}
-                          className="w-full"
+                        <Button
+                          className={`w-full ${
+                            selectedTemplate?._id === template?._id
+                              ? 'bg-black hover:bg-gray-800'
+                              : 'bg-gray-900 hover:bg-black'
+                          }`}
+                          onClick={(e) => handleTemplateSelect(template, e)}
                         >
-                          <Button
-                            className={`w-full ${
-                              selectedTemplate?._id === template?._id
-                                ? 'bg-black hover:bg-gray-800'
-                                : 'bg-gray-900 hover:bg-black'
-                            }`}
-                          >
-                            {selectedTemplate?._id === template?._id ? 'Selected' : 'Select Template'}
-                          </Button>
-                        </Link>
+                          {selectedTemplate?._id === template?._id ? 'Selected' : 'Select Template'}
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

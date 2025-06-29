@@ -107,15 +107,29 @@ const handleSubmit = async (e: React.FormEvent) => {
     // Dispatch login event for other components
     window.dispatchEvent(new CustomEvent('userLogin'));
 
-    setSuccess('Account created successfully! Redirecting to dashboard...');
+    setSuccess('Account created successfully! Redirecting...');
     setToastType('success');
-    setToastMsg('Account created successfully! Redirecting to dashboard...');
+    setToastMsg('Account created successfully! Redirecting...');
     setToastOpen(true);
     toast({
-      title: 'Account created successfully! Redirecting to dashboard...',
+      title: 'Account created successfully! Redirecting...',
     });
+
+    // Check for pending actions and redirect accordingly
+    const pendingTemplate = localStorage.getItem('pendingTemplate');
+    const pendingAnalysis = localStorage.getItem('pendingAnalysis');
+    
     setTimeout(() => {
-      navigate('/dashboard');
+      if (pendingTemplate) {
+        // User was trying to select a template, redirect to create page
+        navigate('/create');
+      } else if (pendingAnalysis) {
+        // User was trying to analyze resume, redirect to analyze page
+        navigate('/analyze');
+      } else {
+        // Default redirect to dashboard
+        navigate('/dashboard');
+      }
     }, 1500);
 
     setFormData({

@@ -67,9 +67,9 @@ const App = () => (
                 </PrivateRoute>
               } />
               <Route path="/analyze" element={
-                <PrivateRoute>
+                
                   <Analyze />
-                </PrivateRoute>
+                
               } />
               <Route path="/templates" element={<Templates />} />
               <Route path="/templates/:name" element={<Templates />} />

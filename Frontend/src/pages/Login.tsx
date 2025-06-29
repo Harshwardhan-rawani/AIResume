@@ -58,17 +58,28 @@ const handleSubmit = async (e: React.FormEvent) => {
     window.dispatchEvent(new CustomEvent('userLogin'));
     
     setToastType('success');
-    setToastMsg('Login successful! Redirecting to dashboard...');
+    setToastMsg('Login successful! Redirecting...');
     setToastOpen(true);
     toast({
       title: "Login Successful",
       description: "You have logged in successfully.",
       duration: 4000,
-
     });
 
-  
+    // Check for pending actions and redirect accordingly
+    const pendingTemplate = localStorage.getItem('pendingTemplate');
+    const pendingAnalysis = localStorage.getItem('pendingAnalysis');
+    
+    if (pendingTemplate) {
+      // User was trying to select a template, redirect to create page
+      navigate('/create');
+    } else if (pendingAnalysis) {
+      // User was trying to analyze resume, redirect to analyze page
+      navigate('/analyze');
+    } else {
+      // Default redirect to dashboard
       navigate('/dashboard');
+    }
    
   } catch (err) {
     let msg = 'An error occurred. Please try again.';

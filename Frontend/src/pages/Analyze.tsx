@@ -1,18 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Upload, Zap, Target, CheckCircle, AlertCircle, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
+import { isTokenValid } from '@/lib/utils';
 
 const Analyze = () => {
+  const navigate = useNavigate();
   const [resumeText, setResumeText] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+
+  // Check for pending analysis data after login
+  useEffect(() => {
+    const pendingAnalysis = localStorage.getItem('pendingAnalysis');
+    if (pendingAnalysis) {
+      try {
+        const analysisData = JSON.parse(pendingAnalysis);
+        setResumeText(analysisData.resumeText || '');
+        setSelectedRole(analysisData.selectedRole || '');
+        // Note: We can't restore the actual file, but we can show the filename
+        if (analysisData.pdfFile) {
+          // Create a placeholder file object for display
+          const placeholderFile = new File([''], analysisData.pdfFile.name, { type: 'application/pdf' });
+          setPdfFile(placeholderFile);
+        }
+        localStorage.removeItem('pendingAnalysis');
+      } catch (err) {
+        console.error('Error parsing pending analysis:', err);
+        localStorage.removeItem('pendingAnalysis');
+      }
+    }
+  }, []);
 
   const jobRoles = [
     'Software Engineer',
@@ -29,6 +54,20 @@ const Analyze = () => {
 
   const handleAnalyze = async () => {
     if ((!resumeText.trim() && !pdfFile) || !selectedRole) return;
+
+    // Check if user is authenticated before proceeding
+    if (!isTokenValid()) {
+      // Store analysis data in localStorage for after login
+      const analysisData = {
+        resumeText,
+        selectedRole,
+        pdfFile: pdfFile ? { name: pdfFile.name, size: pdfFile.size } : null
+      };
+      localStorage.setItem('pendingAnalysis', JSON.stringify(analysisData));
+      // Redirect to login
+      navigate('/login');
+      return;
+    }
 
     setIsAnalyzing(true);
 
@@ -288,6 +327,5 @@ const Analyze = () => {
     </div>
   );
 };
-
 
 export default Analyze;

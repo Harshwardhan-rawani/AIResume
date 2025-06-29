@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/axios";
 import Navbar from "@/components/Navbar";
@@ -27,11 +27,26 @@ const categories = [
 ];
 
 const Create = () => {
-  const { selectedTemplate } = useTemplate();
+  const { selectedTemplate, setSelectedTemplate } = useTemplate();
   const [resumeName, setResumeName] = useState("");
   const [error, setError] = useState("");
   const [category, setCategory] = useState<string>("Professional");
   const navigate = useNavigate();
+
+  // Check for pending template selection after login
+  useEffect(() => {
+    const pendingTemplate = localStorage.getItem('pendingTemplate');
+    if (pendingTemplate && !selectedTemplate) {
+      try {
+        const template = JSON.parse(pendingTemplate);
+        setSelectedTemplate(template);
+        localStorage.removeItem('pendingTemplate');
+      } catch (err) {
+        console.error('Error parsing pending template:', err);
+        localStorage.removeItem('pendingTemplate');
+      }
+    }
+  }, [selectedTemplate, setSelectedTemplate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -9,6 +9,14 @@ const api = axios.create({
   },
 });
 
+// Create public axios instance for unauthenticated requests
+const publicApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
@@ -36,4 +44,5 @@ api.interceptors.response.use(
   }
 );
 
-export default api; 
+export default api;
+export { publicApi }; 

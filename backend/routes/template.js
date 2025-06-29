@@ -21,7 +21,7 @@ const authenticateToken = (req, res, next) => {
   }
 };
 router.post('/templates',authenticateToken,upload.single('image'), templateController.createTemplate);
-router.get('/templates',authenticateToken ,templateController.getTemplates);
+router.get('/templates' ,templateController.getTemplates);
 router.get('/templates/:id',authenticateToken, templateController.getTemplateById);
 router.put('/templates/:id',authenticateToken ,upload.single('image'), templateController.updateTemplate);
 router.delete('/templates/:id',authenticateToken ,templateController.deleteTemplate);
