@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, Star, Eye, Download, Plus } from 'lucide-react';
+import { Search, Star, Eye, Download, Plus, RefreshCw } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { CheckCircle, X } from 'lucide-react';
 import { useTemplate } from '@/hooks/useTemplate';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
+import { isTokenValid } from '@/lib/utils';
 
 const categoryLabels = [
   { key: 'All', label: 'All Templates' },
@@ -63,6 +64,7 @@ const LoadingGrid = () => (
 );
 
 const Templates = () => {
+  const navigate = useNavigate();
   const {
     templates,
     loading,
@@ -71,10 +73,24 @@ const Templates = () => {
     setSelectedTemplate,
     activeCategory,
     setActiveCategory,
-    filteredTemplates
+    filteredTemplates,
+    fetchTemplates
   } = useTemplate();
 
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
+
+  // Check authentication on mount
+  useEffect(() => {
+    if (!isTokenValid()) {
+      navigate('/login');
+      return;
+    }
+  }, [navigate]);
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    fetchTemplates();
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -124,12 +140,21 @@ const Templates = () => {
               <div className="max-w-md mx-auto">
                 <div className="text-red-500 text-lg font-medium mb-2">Failed to load templates</div>
                 <div className="text-gray-600 mb-4">{error}</div>
-                <Button 
-                  onClick={() => window.location.reload()} 
-                  variant="outline"
-                >
-                  Try Again
-                </Button>
+                <div className="flex gap-3 justify-center">
+                  <Button 
+                    onClick={handleRefresh}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Try Again
+                  </Button>
+                  <Button 
+                    onClick={() => window.location.reload()} 
+                    variant="outline"
+                  >
+                    Refresh Page
+                  </Button>
+                </div>
               </div>
             </div>
           ) : filteredTemplates.length === 0 ? (
@@ -139,14 +164,23 @@ const Templates = () => {
                 <div className="text-gray-500 mb-4">
                   No templates available for the "{activeCategory}" category.
                 </div>
-                {activeCategory !== 'All' && (
+                <div className="flex gap-3 justify-center">
+                  {activeCategory !== 'All' && (
+                    <Button 
+                      onClick={() => setActiveCategory('All')} 
+                      variant="outline"
+                    >
+                      View All Templates
+                    </Button>
+                  )}
                   <Button 
-                    onClick={() => setActiveCategory('All')} 
-                    variant="outline"
+                    onClick={handleRefresh}
+                    className="flex items-center gap-2"
                   >
-                    View All Templates
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh
                   </Button>
-                )}
+                </div>
               </div>
             </div>
           ) : (

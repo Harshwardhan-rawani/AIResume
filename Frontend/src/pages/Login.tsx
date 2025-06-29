@@ -54,8 +54,11 @@ const handleSubmit = async (e: React.FormEvent) => {
     localStorage.setItem('authToken', response.data.token);
     localStorage.setItem('userName', response.data.fullName);
     
+    // Dispatch login event for other components
+    window.dispatchEvent(new CustomEvent('userLogin'));
+    
     setToastType('success');
-    setToastMsg('Login successful! Redirecting...');
+    setToastMsg('Login successful! Redirecting to dashboard...');
     setToastOpen(true);
     toast({
       title: "Login Successful",

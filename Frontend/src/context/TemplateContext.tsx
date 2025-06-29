@@ -1,5 +1,6 @@
-import { createContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useState, ReactNode, useEffect, useCallback } from "react";
 import api from "@/lib/axios";
+import { getAuthToken, isTokenValid } from "@/lib/utils";
 
 interface Template {
   _id?: string;
@@ -67,6 +68,7 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Filtered templates based on active category
   const filteredTemplates = activeCategory === 'All' 
@@ -75,23 +77,54 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
         template.category.toLowerCase() === activeCategory.toLowerCase()
       );
 
-  // Fetch templates from backend
-  const fetchTemplates = async () => {
+  // Fetch templates from backend with retry mechanism
+  const fetchTemplates = useCallback(async (retryCount = 0) => {
+    // Check if user is authenticated
+    if (!isTokenValid()) {
+      setError('Authentication required');
+      setTemplates([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    
     try {
       const response = await api.get('/api/templates');
       const fetchedTemplates = Array.isArray(response.data.templates) 
         ? response.data.templates 
         : [];
       setTemplates(fetchedTemplates);
-    } catch (err) {
-      setError('Failed to fetch templates');
+      setHasInitialized(true);
+    } catch (err: any) {
+      console.error('Error fetching templates:', err);
+      
+      // If it's an authentication error and we haven't retried yet, try again
+      if (err.response?.status === 401 && retryCount < 2) {
+        console.log('Authentication error, retrying...');
+        // Wait a bit before retrying
+        setTimeout(() => {
+          fetchTemplates(retryCount + 1);
+        }, 1000);
+        return;
+      }
+      
+      // If it's a network error and we haven't retried yet, try again
+      if (!err.response && retryCount < 2) {
+        console.log('Network error, retrying...');
+        setTimeout(() => {
+          fetchTemplates(retryCount + 1);
+        }, 2000);
+        return;
+      }
+      
+      setError(err.response?.data?.error || 'Failed to fetch templates. Please try again.');
       setTemplates([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Create new template
   const createTemplate = async (templateData: Partial<Template>) => {
@@ -140,6 +173,7 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
     setTemplates([]);
     setActiveCategory('All');
     setError(null);
+    setHasInitialized(false);
   };
 
   // Load selected template from localStorage on mount (for backward compatibility)
@@ -170,10 +204,29 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [selectedTemplate]);
 
-  // Fetch templates on mount
+  // Fetch templates on mount only if user is authenticated
   useEffect(() => {
-    fetchTemplates();
-  }, []);
+    if (isTokenValid() && !hasInitialized) {
+      fetchTemplates();
+    }
+  }, [fetchTemplates, hasInitialized]);
+
+  // Listen for authentication changes and fetch templates when user logs in
+  useEffect(() => {
+    const checkAuthAndFetch = () => {
+      if (isTokenValid() && !hasInitialized) {
+        fetchTemplates();
+      }
+    };
+
+    // Check immediately
+    checkAuthAndFetch();
+
+    // Set up an interval to check for authentication changes
+    const interval = setInterval(checkAuthAndFetch, 2000);
+
+    return () => clearInterval(interval);
+  }, [fetchTemplates, hasInitialized]);
 
   // Listen for logout events
   useEffect(() => {
@@ -187,6 +240,21 @@ export const TemplateProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener('userLogout', handleUserLogout);
     };
   }, []);
+
+  // Listen for successful login events
+  useEffect(() => {
+    const handleUserLogin = () => {
+      if (isTokenValid() && !hasInitialized) {
+        fetchTemplates();
+      }
+    };
+
+    window.addEventListener('userLogin', handleUserLogin);
+    
+    return () => {
+      window.removeEventListener('userLogin', handleUserLogin);
+    };
+  }, [fetchTemplates, hasInitialized]);
 
   const value: TemplateContextType = {
     selectedTemplate,
